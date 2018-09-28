@@ -1,0 +1,62 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    draft: {{ default "draft-app" .Values.draft }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      annotations:
+        buildID: {{ .Values.buildID }}
+      labels:
+        draft: {{ default "draft-app" .Values.draft }}
+        app: {{ template "fullname" . }}
+    spec:
+      volumes:
+      - name: vault-token
+        emptyDir:
+          medium: Memory
+      # Needed to have the CA cert that was used to sign Vaults TLS cert. 
+      # Not very secure since this volume also contains the servers private key
+      - name: vault-tls
+        secret:
+          secretName: {{ .Values.vault.tlsSecretName }}
+
+      initContainers:
+      # Init container to retrieve a vault token via kubenernetes auth
+      # See kube/vault-auth-demo.yaml for details on this
+      - name: vault-authenticator
+        image: sethvargo/vault-kubernetes-authenticator:0.1.2
+        volumeMounts:
+        - name: vault-token
+          mountPath: /home/vault
+        - name: vault-tls
+          mountPath: /etc/vault/tls
+        env:
+        - name: TOKEN_DEST_PATH
+          value: /home/vault/.vault-token
+        - name: VAULT_ROLE
+          value: default
+        - name: VAULT_CACERT
+          value: /etc/vault/tls/ca.crt
+        - name: VAULT_ADDR
+          value: {{ .Values.vault.addr }}
+
+      containers:
+      # App container retrieves the vault token on a shared, in-memory volume
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.internalPort }}
+        env:
+        - name: VAULT_TOKEN_PATH
+          value: /home/vault/.vault-token
+        volumeMounts:
+        - name: vault-token
+          mountPath: /home/vault/
+        resources:
+{{ toYaml .Values.resources | indent 12 }}
