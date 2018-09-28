@@ -1,0 +1,24 @@
+# Helm values file for Banzaiclouds bank-vaults vault operator helm chart. 
+# Mostly contains the config for vault itself.
+# See https://github.com/banzaicloud/bank-vaults/blob/b8d2f4f60c03d0126cf5ff670cd61ed34aab8008/operator/deploy/cr-aws.yaml#L42
+vault:
+  config:
+    storage:
+      inmem: {}
+
+  externalConfig:
+    policies:
+    - name: allow_secrets
+      rules: path "secret/*" {
+              capabilities = ["create", "read", "update", "delete", "list"]
+            }
+    # Allow every pod in the default namespace to use the secret kv store. This simple, but not 
+    # very secure - in a real-world scenario we'd probably use specialised roles and limited policies
+    auth:
+    - type: kubernetes
+      roles:
+        - name: default
+          bound_service_account_names: default
+          bound_service_account_namespaces: default
+          policies: allow_secrets
+          ttl: 1h
