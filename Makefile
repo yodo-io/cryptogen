@@ -2,7 +2,7 @@ name = $(shell basename $$PWD)
 
 build: /bin/$(name)
 
-/bin/$(name):
+bin/$(name):
 	go build -o bin/$(name)
 
 run: build
