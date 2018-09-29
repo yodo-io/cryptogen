@@ -11,13 +11,17 @@ COPY Gopkg.lock Gopkg.toml ./
 RUN dep ensure -vendor-only=true
 
 COPY . .
-RUN go build -o /bin/cryptogen
+RUN go build -o /bin/cryptogen-server
 
-CMD ["/bin/cryptogen"]
+# fabric tools to copy cryptogen
+FROM hyperledger/fabric-tools:1.2.0 AS tools
 
 # run stage
 FROM alpine:3.8  
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates libc6-compat
+
+COPY --from=builder /bin/cryptogen-server /usr/local/bin/
+COPY --from=tools /usr/local/bin/cryptogen /usr/local/bin/
+
 WORKDIR /root/
-COPY --from=builder /bin/cryptogen /bin/
-CMD ["/bin/cryptogen"]
+CMD ["/usr/local/bin/cryptogen-server"]
