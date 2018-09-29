@@ -1,38 +1,32 @@
 #!/bin/sh
 
+port=54323
 pod=`kubectl get pod -l draft=cryptogen -o name | awk -F'/' '{ print $2 }'`
 
 echo "Pod $pod"
 
-if [ -f .test.pid ]; then
-    pid=`cat .test.pid`
-    echo "killing $pid"
-    kill $pid
-    rm .test.pid
-fi
-
-kubectl port-forward $pod 5000 &
+kubectl port-forward $pod $port:5000 2>&1 > /dev/null &
 pid=$!
-if [ $? -eq 0 ]; then
-    echo $pid > .test.pid
-    sleep 1
-fi
+sleep 1
 
 echo "pid: $pid"
 
 echo "health check:"
-curl -sS http://localhost:5000/health
+curl -sS http://localhost:$port/health
 echo
+
 
 echo "api test:"
-curl -sS -XPOST \
+res=`curl -sS -XPOST \
     -d'{"PeerOrgs": [{"Name": "Org1", "Domain": "org1.example.com", "Template": {"Count": 1}, "Users": {"Count": 1}}]}' \
     -H"Content-type: application/json" \
-    http://localhost:5000/crypto-assets | jq -r '.TaskID' > .taskID
+    http://localhost:$port/crypto-assets`
 
-echo
+echo $res
 
-taskid=`cat .taskID`
-cmd="curl -sS http://localhost:5000/task/$taskid"
+taskid=`echo $res | jq -r '.TaskID'`
+cmd="curl -sS http://localhost:$port/task/$taskid"
 echo "$cmd"
-$cmd | jq
+$cmd && echo
+
+kill $pid
