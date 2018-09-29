@@ -35,3 +35,12 @@ Release:
 ```sh
 draft up
 ```
+
+## Accessing Vault
+
+```sh
+VAULT_TOKEN=`kubectl get secret bank-vaults -o jsonpath='{.data.vault-root}' | base64 -D`
+export VAULT_TOKEN
+export VAULT_ADDR=https://localhost:8200
+export VAULT_SKIP_VERIFY="true"
+```

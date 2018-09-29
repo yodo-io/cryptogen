@@ -37,6 +37,9 @@ if [ "$tiller" == "" ] ; then
     sleep 5
 fi
 
+helm repo add stable http://storage.googleapis.com/kubernetes-charts
+helm repo add banzaicloud-stable http://kubernetes-charts.banzaicloud.com/branch/master
+
 # Install Vault using Banzaiclouds awesome operator to simplify configuration, automate unsealing etc.
 # See https://github.com/banzaicloud/bank-vaults
 # 
@@ -45,8 +48,13 @@ fi
 # 
 # In real life we'd need more restrictive policies, specialised SA's and vault role mappings, 
 # use Consul or S3 as a backend and store admin tokens and unseal keys in AWS KMS or similar.
-helm repo add banzaicloud-stable http://kubernetes-charts.banzaicloud.com/branch/master
+
 helm upgrade -i \
     --kube-context $CTX \
     -f $DIR/vault.yaml \
     vault banzaicloud-stable/vault
+
+helm upgrade -i \
+    --kube-context $CTX \
+    --set usePassword=false \
+    redis stable/redis
