@@ -42,9 +42,9 @@ draft up
 
 With draft and the same kube context still active, use `test.sh` for a demo
 
-## Implementation & API Design
+## Implementation & Design
 
-See [docs folder](./docs)
+See [design document](./docs/cryptogen.md)
 
 ## Misc
 
