@@ -2,7 +2,7 @@
 
 ## Setup Draft
 
-Draft is used to simplify development workflow against k8s. It conveniently generates a helm chart which could later be used for deployment.
+Draft is used to simplify development workflow against k8s. It conveniently generates a helm chart which can also be used for deployment.
 
 Via Homebrew:
 
@@ -26,7 +26,7 @@ draft init
 
 ## Running 
 
-When using minikube, make sure we're using minikubes registry:
+When using minikube, make sure you're using minikubes built-in registry:
 
 ```sh
 eval $(minikube docker-env)
@@ -40,7 +40,30 @@ draft up
 
 ## Testing
 
-With draft and the same kube context still active, use `test.sh` for a demo
+With draft and the same kube context still active, use `test.sh` for a demo.
+
+API usage:
+
+```sh
+# substitute address
+$ ADDRESS=http://cryptogen.example.org/
+
+# get health status
+$ curl -sS $ADDRESS/health
+{"Status":"OK"} 
+
+# create job
+$ DATA='{"PeerOrgs": [{"Name": "Org1", "Domain": "my-org.example.com", "Template": {"Count": 1}, "Users": {"Count": 1}}]}'
+$ curl -sS -XPOST \
+    -d"$DATA" \
+    -H"Content-type: application/json" \
+    $ADDRESS/crypto-assets
+{"JobID":"1538223625-51403"}
+
+# get status and results
+$ curl -sS $ADDRESS/status/<JOB_ID>
+{"Status": "complete", "SecretPaths": [...]}
+```
 
 ## Implementation & Design
 
