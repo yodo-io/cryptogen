@@ -20,8 +20,10 @@ FROM hyperledger/fabric-tools:1.2.0 AS tools
 FROM alpine:3.8  
 RUN apk --no-cache add ca-certificates libc6-compat
 
+ENV CRYPTOGEN_PATH=/usr/local/bin/cryptogen
+
 COPY --from=builder /bin/cryptogen-server /usr/local/bin/
 COPY --from=tools /usr/local/bin/cryptogen /usr/local/bin/
 
 WORKDIR /root/
-CMD ["/usr/local/bin/cryptogen-server"]
+ENTRYPOINT "/usr/local/bin/cryptogen-server"

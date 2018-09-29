@@ -24,8 +24,8 @@ res=`curl -sS -XPOST \
 
 echo $res
 
-taskid=`echo $res | jq -r '.TaskID'`
-cmd="curl -sS http://localhost:$port/task/$taskid"
+jobID=`echo $res | jq -r '.JobID'`
+cmd="curl -sS http://localhost:$port/status/$jobID"
 echo "$cmd"
 $cmd && echo
 

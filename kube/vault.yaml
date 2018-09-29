@@ -1,10 +1,10 @@
-# Helm values file for Banzaiclouds bank-vaults vault operator helm chart. 
-# Mostly contains the config for vault itself.
+# Helm values file for Banzaiclouds bank-vaults vault operator helm chart. Mostly contains the config for vault itself.
 # See https://github.com/banzaicloud/bank-vaults/blob/b8d2f4f60c03d0126cf5ff670cd61ed34aab8008/operator/deploy/cr-aws.yaml#L42
 vault:
   config:
     storage:
-      inmem: {}
+      file:
+        path: /vault/file
 
   externalConfig:
     policies:

@@ -43,7 +43,7 @@ helm repo add banzaicloud-stable http://kubernetes-charts.banzaicloud.com/branch
 # Install Vault using Banzaiclouds awesome operator to simplify configuration, automate unsealing etc.
 # See https://github.com/banzaicloud/bank-vaults
 # 
-# To keep it simple, we're using inmem storage and a bunch of insecure settings: in-memory storage,
+# To keep it simple, we're using filesystem storage and a bunch of insecure settings:
 # map kube default SA to a very broad policy, store vault root token and unseal keys in kube secrets
 # 
 # In real life we'd need more restrictive policies, specialised SA's and vault role mappings, 
@@ -52,9 +52,11 @@ helm repo add banzaicloud-stable http://kubernetes-charts.banzaicloud.com/branch
 helm upgrade -i \
     --kube-context $CTX \
     -f $DIR/vault.yaml \
+    --version 0.5.12 \
     vault banzaicloud-stable/vault
 
 helm upgrade -i \
     --kube-context $CTX \
     --set usePassword=false \
+    --version 4.1.0 \
     redis stable/redis
