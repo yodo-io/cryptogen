@@ -3,6 +3,7 @@ package worker
 import (
 	"fmt"
 	"math/rand"
+	"path"
 	"time"
 
 	"github.com/yodo-io/cryptogen/pkg/crypto"
@@ -33,9 +34,10 @@ type Config struct {
 }
 
 type JobUpdate struct {
-	Status string
-	Error  error
-	JobID  string
+	Status      string
+	Error       error
+	JobID       string
+	SecretPaths []string // paths to generated secrets
 }
 
 type Job struct {
@@ -70,23 +72,34 @@ func (w *Worker) worker() {
 	go func() {
 		for j := range w.queue {
 			w.Feed <- JobUpdate{JobID: j.ID, Status: JobStatusProcessing}
-			if err := w.work(j); err != nil {
+			paths, err := w.work(j)
+			if err != nil {
 				w.Feed <- JobUpdate{JobID: j.ID, Error: err, Status: JobStatusError}
 				continue
 			}
-			w.Feed <- JobUpdate{JobID: j.ID, Status: JobStatusComplete}
+			w.Feed <- JobUpdate{
+				Status:      JobStatusComplete,
+				JobID:       j.ID,
+				SecretPaths: paths,
+			}
 		}
 	}()
 }
 
-func (w *Worker) work(j Job) error {
-	res, err := w.crypto.GenerateAssets(j.ID, j.Req)
+func (w *Worker) work(j Job) ([]string, error) {
+	assets, err := w.crypto.GenerateAssets(j.ID, j.Req)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	prefix := "/secret/crypto/" + j.ID
-	if err := w.kms.StoreAssets(prefix, res); err != nil {
-		return err
+
+	paths := make([]string, len(assets))
+	prefix := "/secret/cryptogen"
+	for i, a := range assets {
+		p := path.Join(prefix, a.Path)
+		paths[i] = p
+		if err := w.kms.StoreAssets(p, a.Secrets); err != nil {
+			return nil, err
+		}
 	}
-	return nil
+	return paths, nil
 }

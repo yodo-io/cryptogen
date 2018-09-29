@@ -19,6 +19,15 @@ type GenerateCryptoRequest struct {
 	PeerOrgs []PeerOrg `json:"PeerOrgs" yaml:"PeerOrgs"`
 }
 
+// Assets is basically a list of secrets, each to be stored under a certain path
+type Assets []struct {
+	Path    string
+	Secrets Secrets
+}
+
+// Secrets is a map of key to binary data to be stored in KMS
+type Secrets map[string]interface{}
+
 type Provider interface {
-	GenerateAssets(taskID string, req GenerateCryptoRequest) (map[string]interface{}, error)
+	GenerateAssets(taskID string, req GenerateCryptoRequest) (Assets, error)
 }

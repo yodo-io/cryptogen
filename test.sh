@@ -26,7 +26,13 @@ echo $res
 
 jobID=`echo $res | jq -r '.JobID'`
 cmd="curl -sS http://localhost:$port/status/$jobID"
+
 echo "$cmd"
 $cmd && echo
+
+sleep 3
+echo "$cmd"
+$cmd && echo
+
 
 kill $pid

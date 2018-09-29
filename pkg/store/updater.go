@@ -15,7 +15,11 @@ func UpdateJobs(s Provider, feed <-chan worker.JobUpdate) {
 			} else {
 				log.Printf("Job %s changed to %s", u.JobID, u.Status)
 			}
-			if err := s.SetStatus(u.JobID, u.Status); err != nil {
+			status := JobStatus{
+				Status:      u.Status,
+				SecretPaths: u.SecretPaths,
+			}
+			if err := s.SetStatus(u.JobID, status); err != nil {
 				log.Printf("Failed to update status for job %s: %v", u.JobID, err)
 			}
 		}

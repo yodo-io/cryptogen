@@ -2,6 +2,8 @@
 
 ## Setup Draft
 
+Draft is used to simplify development workflow against k8s. It conveniently generates a helm chart which could later be used for deployment.
+
 Via Homebrew:
 
 ```sh
@@ -22,7 +24,7 @@ Init draft locally (not sure it's needed on an already bootstrapped project):
 draft init
 ```
 
-## Release 
+## Running 
 
 When using minikube, make sure we're using minikubes registry:
 
@@ -30,17 +32,33 @@ When using minikube, make sure we're using minikubes registry:
 eval $(minikube docker-env)
 ```
 
-Release:
+Release to test cluster:
 
 ```sh
 draft up
 ```
 
-## Accessing Vault
+## Testing
+
+With draft and the same kube context still active, use `test.sh` for a demo
+
+## Implementation & API Design
+
+See [docs folder](./docs)
+
+## Misc
+
+### Accessing Vault
 
 ```sh
 VAULT_TOKEN=`kubectl get secret bank-vaults -o jsonpath='{.data.vault-root}' | base64 -D`
 export VAULT_TOKEN
 export VAULT_ADDR=https://localhost:8200
-export VAULT_SKIP_VERIFY="true"
+export VAULT_SKIP_VERIFY="true
+```
+
+### Container Logs
+
+```sh
+kubectl logs -f `kubectl get pod -l draft=cryptogen -o name | awk -F'/' '{ print $2 }'`
 ```

@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/go-redis/redis"
 )
@@ -30,8 +31,21 @@ type RedisStore struct {
 	client *redis.Client
 }
 
-func taskKey(taskID string) string {
-	return fmt.Sprintf("cryptogen.task.%s", taskID)
+func taskKey(taskID, suffix string) string {
+	return fmt.Sprintf("cryptogen.task.%s.%s", taskID, suffix)
+}
+
+// we don't really do anything with the paths in Redis for now, other than
+// storing and retrieving. So a string blob will do for
+func serializePaths(paths []string) string {
+	return strings.Join(paths, ":")
+}
+
+func deserializePaths(paths string) []string {
+	if len(paths) == 0 {
+		return []string{}
+	}
+	return strings.Split(paths, ":")
 }
 
 // Ping does a ping to test connection, returns an error on failure
@@ -43,9 +57,14 @@ func (r *RedisStore) Ping() error {
 }
 
 // SetStatus stores the status for given task in Redis using a key generated based on taskID
-func (r *RedisStore) SetStatus(taskID, status string) error {
-	key := taskKey(taskID)
-	if err := r.client.Set(key, status, 0).Err(); err != nil {
+func (r *RedisStore) SetStatus(taskID string, status JobStatus) error {
+	skey := taskKey(taskID, "status")
+	pkey := taskKey(taskID, "paths")
+
+	if err := r.client.Set(skey, status.Status, 0).Err(); err != nil {
+		return err
+	}
+	if err := r.client.Set(pkey, serializePaths(status.SecretPaths), 0).Err(); err != nil {
 		return err
 	}
 	return nil
@@ -53,15 +72,30 @@ func (r *RedisStore) SetStatus(taskID, status string) error {
 
 // GetStatus retrieves the status for given task in Redis using a key generated based on taskID
 // It returns ErrNotFound if nothing was found for the requested key
-func (r *RedisStore) GetStatus(taskID string) (string, error) {
-	key := taskKey(taskID)
-	val, err := r.client.Get(key).Result()
-	switch {
-	case err != nil:
-		return "", err
-	case val == "":
-		return "", ErrNotFound
-	default:
-		return val, nil
+func (r *RedisStore) GetStatus(taskID string) (JobStatus, error) {
+	var out JobStatus
+
+	skey := taskKey(taskID, "status")
+	pkey := taskKey(taskID, "paths")
+
+	// get status
+	status, err := r.client.Get(skey).Result()
+	if err != nil {
+		return out, err
 	}
+	if status == "" {
+		return out, ErrNotFound
+	}
+
+	// get paths, if any
+	paths, err := r.client.Get(pkey).Result()
+	if err != nil {
+		return out, err
+	}
+
+	out = JobStatus{
+		Status:      status,
+		SecretPaths: deserializePaths(paths),
+	}
+	return out, nil
 }
