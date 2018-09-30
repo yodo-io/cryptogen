@@ -21,6 +21,8 @@ const (
 	JobStatusComplete   string = "complete"
 )
 
+// Worker type, read jobs from a queue, generate crypto assets and write them to a KMS
+// Job status updates are published to a channel
 type Worker struct {
 	Feed   chan JobUpdate
 	queue  chan Job
@@ -28,11 +30,14 @@ type Worker struct {
 	crypto crypto.Provider
 }
 
+// Config struct for worker, holding its dependencies
 type Config struct {
 	Kms    kms.Provider
 	Crypto crypto.Provider
 }
 
+// JobUpdate is published whenever a job changes it's status. Current job status
+// will be in the `Status` field. Any errors are in the `Error` field.
 type JobUpdate struct {
 	Status      string
 	Error       error
@@ -40,11 +45,13 @@ type JobUpdate struct {
 	SecretPaths []string // paths to generated secrets
 }
 
+// Job to process by the worker
 type Job struct {
 	ID  string
 	Req crypto.GenerateCryptoRequest
 }
 
+// NewJob creates a new job with a randomised ID and enqueues it in the worker
 func (w *Worker) NewJob(req crypto.GenerateCryptoRequest) Job {
 	jobID := fmt.Sprintf("%d-%d", time.Now().Unix(), rand.Intn(100000))
 	job := Job{
@@ -55,6 +62,7 @@ func (w *Worker) NewJob(req crypto.GenerateCryptoRequest) Job {
 	return job
 }
 
+// New creates a new worker from given Config
 func New(c *Config) *Worker {
 	w := &Worker{
 		Feed:   make(chan JobUpdate),
@@ -62,12 +70,14 @@ func New(c *Config) *Worker {
 		kms:    c.Kms,
 		crypto: c.Crypto,
 	}
+	// FIXME: don't hardcode number of workers
 	for i := 0; i < 3; i++ {
 		w.worker()
 	}
 	return w
 }
 
+// worker routing. process jobs as they come in, publish updates
 func (w *Worker) worker() {
 	go func() {
 		for j := range w.queue {
@@ -86,6 +96,7 @@ func (w *Worker) worker() {
 	}()
 }
 
+// does the actual work of generating crypto assets
 func (w *Worker) work(j Job) ([]string, error) {
 	assets, err := w.crypto.GenerateAssets(j.ID, j.Req)
 	if err != nil {
@@ -97,7 +108,7 @@ func (w *Worker) work(j Job) ([]string, error) {
 	for i, a := range assets {
 		p := path.Join(prefix, a.Path)
 		paths[i] = p
-		if err := w.kms.StoreAssets(p, a.Secrets); err != nil {
+		if err := w.kms.Store(p, a.Entries); err != nil {
 			return nil, err
 		}
 	}

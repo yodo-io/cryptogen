@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/yodo-io/cryptogen/pkg/crypto/worker"
 	"github.com/yodo-io/cryptogen/pkg/store"
+	"github.com/yodo-io/cryptogen/pkg/worker"
 )
 
 // Config is the provider configuration to be used by the API

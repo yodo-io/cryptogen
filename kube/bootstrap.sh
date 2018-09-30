@@ -37,6 +37,7 @@ if [ "$tiller" == "" ] ; then
     sleep 5
 fi
 
+# Some chart repos we need
 helm repo add stable http://storage.googleapis.com/kubernetes-charts
 helm repo add banzaicloud-stable http://kubernetes-charts.banzaicloud.com/branch/master
 
@@ -48,13 +49,14 @@ helm repo add banzaicloud-stable http://kubernetes-charts.banzaicloud.com/branch
 # 
 # In real life we'd need more restrictive policies, specialised SA's and vault role mappings, 
 # use Consul or S3 as a backend and store admin tokens and unseal keys in AWS KMS or similar.
-
 helm upgrade -i \
     --kube-context $CTX \
     -f $DIR/vault.yaml \
     --version 0.5.12 \
     vault banzaicloud-stable/vault
 
+# A redis chart for persistence. Nothing fancy and not really persistent, more suitable for
+# development and testing than production usage.
 helm upgrade -i \
     --kube-context $CTX \
     --set usePassword=false \

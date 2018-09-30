@@ -6,7 +6,6 @@ import (
 	"log"
 
 	vault "github.com/hashicorp/vault/api"
-	"github.com/yodo-io/cryptogen/pkg/crypto"
 )
 
 // Vault implementation of kms.Provider interface
@@ -59,8 +58,8 @@ func readTokenFromFile(tokenPath string) (string, error) {
 	return string(token), nil
 }
 
-// StoreAssets stores the given assets in vault at a given path prefix
-func (v *Vault) StoreAssets(p string, s crypto.Secrets) error {
+// Store stores the given secrets in vault at the given path
+func (v *Vault) Store(p string, s map[string]interface{}) error {
 	if _, err := v.client.Write(p, s); err != nil {
 		return fmt.Errorf("Error writing to vault at path %s: %v", p, err)
 	}

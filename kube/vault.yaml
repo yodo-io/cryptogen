@@ -12,7 +12,7 @@ vault:
       rules: path "secret/*" {
               capabilities = ["create", "read", "update", "delete", "list"]
             }
-    # Allow every pod in the default namespace to use the secret kv store. This simple, but not 
+    # Allow every pod in the default namespace to use the secret kv store. This is simple, but not 
     # very secure - in a real-world scenario we'd probably use specialised roles and limited policies
     auth:
     - type: kubernetes

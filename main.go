@@ -7,7 +7,7 @@ import (
 	"syscall"
 
 	"github.com/yodo-io/cryptogen/pkg/api"
-	"github.com/yodo-io/cryptogen/pkg/crypto/worker"
+	"github.com/yodo-io/cryptogen/pkg/worker"
 
 	"github.com/yodo-io/cryptogen/pkg/crypto"
 	"github.com/yodo-io/cryptogen/pkg/kms"
@@ -92,4 +92,24 @@ func server(c config) {
 		Store:  s,
 	})
 	r.Run(c.address)
+}
+
+// UpdateJobs listens to job status feed, updates task status in database
+func updateJobs(s store.Provider, feed <-chan worker.JobUpdate) {
+	go func() {
+		for u := range feed {
+			if u.Error != nil {
+				log.Printf("Job %s encountered an error: %v", u.JobID, u.Error)
+			} else {
+				log.Printf("Job %s changed to %s", u.JobID, u.Status)
+			}
+			status := store.JobStatus{
+				Status:      u.Status,
+				SecretPaths: u.SecretPaths,
+			}
+			if err := s.SetStatus(u.JobID, status); err != nil {
+				log.Printf("Failed to update status for job %s: %v", u.JobID, err)
+			}
+		}
+	}()
 }

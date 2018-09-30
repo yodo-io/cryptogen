@@ -28,7 +28,7 @@ func New(c Config) (*Cryptogen, error) {
 }
 
 // GenerateAssets generates crypto assets and returns them for further processing
-func (c *Cryptogen) GenerateAssets(taskID string, req GenerateCryptoRequest) (Assets, error) {
+func (c *Cryptogen) GenerateAssets(taskID string, req GenerateCryptoRequest) ([]Asset, error) {
 	prefix := path.Join(c.Config.TmpDir, taskID)
 	cryptoConfPath := prefix + "/crypto-config.yaml"
 	cryptoOutPath := prefix + "/crypto-config/"
@@ -111,15 +111,14 @@ func genPaths(req GenerateCryptoRequest) []string {
 
 // Note: a lot of the crypto assets generated are duplicated. For simplicities sake, we still
 // just read all of this to resemble the structure created by cryptogen as closely as possible
-func readAssets(prefix string, req GenerateCryptoRequest) (Assets, error) {
-	// var out Assets
+func readAssets(prefix string, req GenerateCryptoRequest) ([]Asset, error) {
 
 	peersPrefix := path.Join(prefix, "peerOrganizations")
 	paths := genPaths(req)
-	assets := make(Assets, len(paths))
+	assets := make([]Asset, len(paths))
 
 	for i, p := range paths {
-		secrets := Secrets{}
+		entries := map[string]interface{}{}
 
 		dir := path.Join(peersPrefix, p)
 		files, err := ioutil.ReadDir(dir)
@@ -130,14 +129,16 @@ func readAssets(prefix string, req GenerateCryptoRequest) (Assets, error) {
 			n := file.Name()
 			fp := path.Join(dir, n)
 
+			// instead of reading all those files into memory at the same time
+			// maybe return a bunch of io.Readers instead?
 			b, err := ioutil.ReadFile(fp)
 			if err != nil {
 				return nil, err
 			}
 			log.Printf("read %d bytes from %s", len(b), fp)
-			secrets[n] = b
+			entries[n] = b
 		}
-		assets[i].Secrets = secrets
+		assets[i].Entries = entries
 		assets[i].Path = path.Join("peerOrganizations", p)
 	}
 

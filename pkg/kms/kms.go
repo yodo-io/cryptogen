@@ -1,8 +1,7 @@
 package kms
 
-import "github.com/yodo-io/cryptogen/pkg/crypto"
-
 // Provider interface for key management services
 type Provider interface {
-	StoreAssets(p string, s crypto.Secrets) error
+	// Store secrets in the KMS at the given path
+	Store(path string, s map[string]interface{}) error
 }
